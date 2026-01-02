@@ -1,4 +1,79 @@
 const KAMUS = ["ABADI", "ACARA", "AKTIF", "ALBUM", "ANDAL", "ANGKA", "ARSIP", "ARTIS", "ASING", "BAGAN", "BAHWA", "BAKTI", "BALOK", "BATAS", "BEBAS", "BENAR", "BENDA", "BERAS", "BESAR", "BUKTI", "BUKIT", "BUNGA", "BUTUH", "CANDA", "CEPAT", "CERIA", "CUKUP", "DARAH", "DARAT", "DASAR", "DEKAT", "DERET", "DRAMA", "DUNIA", "EJAAN", "FAKTA", "FOKUS", "GARIS", "GAJAH", "GELAS", "GERAK", "GURUN", "HABIS", "HAKIM", "HARAP", "HARTA", "HASIL", "HIDUP", "HITAM", "IDEAL"];
+const keyboardContainer = document.getElementById("keyboard-container");
+
+function initGame() {
+    // ... (Kode buat grid tetap sama) ...
+    
+    createKeyboard(); // Tambahkan pemanggilan ini
+    
+    if (history.length > 0) {
+        history.forEach((guess) => {
+            renderGuess(guess);
+            currentAttempt++;
+        });
+        checkWinLoss(history[history.length - 1]);
+    }
+}
+
+function createKeyboard() {
+    const layout = [
+        "QWERTYUIOP",
+        "ASDFGHJKL",
+        "ENTER,ZXCVBNM,BACKSPACE"
+    ];
+
+    layout.forEach(rowStr => {
+        const row = document.createElement("div");
+        row.className = "key-row";
+        
+        const keys = rowStr.split(",");
+        
+        // Untuk baris yang tidak pakai koma (baris 1 & 2)
+        if (keys.length === 1) {
+            keys[0].split("").forEach(char => addKey(row, char));
+        } else {
+            // Untuk baris 3 (ada Enter dan Backspace)
+            keys.forEach(keyGroup => {
+                if (keyGroup.length > 1 && (keyGroup === "ENTER" || keyGroup === "BACKSPACE")) {
+                    addKey(row, keyGroup, true);
+                } else {
+                    keyGroup.split("").forEach(char => addKey(row, char));
+                }
+            });
+        }
+        keyboardContainer.appendChild(row);
+    });
+}
+
+function addKey(parent, label, isLarge = false) {
+    const button = document.createElement("button");
+    button.className = `key ${isLarge ? 'large' : ''}`;
+    button.innerText = label === "BACKSPACE" ? "DEL" : label;
+    button.addEventListener("click", () => handleInput(label));
+    parent.appendChild(button);
+}
+
+// Fungsi bantu agar input dari keyboard fisik dan layar jadi satu pintu
+function handleInput(key) {
+    if (isGameOver) return;
+
+    if (key === "ENTER") {
+        if (currentGuess.length === 5) processGuess(currentGuess);
+    } else if (key === "BACKSPACE" || key === "DEL") {
+        currentGuess = currentGuess.slice(0, -1);
+        updateVisual();
+    } else if (currentGuess.length < 5 && /^[A-Z]$/.test(key.toUpperCase())) {
+        currentGuess += key.toUpperCase();
+        updateVisual();
+    }
+}
+
+// Update Event Listener Keyboard Fisik (PC) agar memanggil handleInput
+document.addEventListener("keydown", (e) => {
+    let key = e.key.toUpperCase();
+    if (key === "BACKSPACE") key = "BACKSPACE";
+    handleInput(key);
+});
 
 // 1. Tentukan Jawaban Hari Ini
 const today = new Date().toDateString();
