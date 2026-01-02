@@ -1,7 +1,7 @@
 body {
     background-color: #121213;
     color: white;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -27,8 +27,8 @@ body {
 }
 
 .tile {
-    width: 50px;
-    height: 50px;
+    width: 58px;
+    height: 58px;
     border: 2px solid #3a3a3c;
     display: flex;
     justify-content: center;
@@ -38,12 +38,15 @@ body {
     text-transform: uppercase;
 }
 
+/* Status Warna */
 .correct { background-color: #538d4e; border: none; }
 .present { background-color: #b59f3b; border: none; }
 .absent { background-color: #3a3a3c; border: none; }
 
-#keyboard {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+#message {
+    height: 30px;
+    font-weight: bold;
+    margin-top: 10px;
 }
+
+.hint { color: #818384; font-size: 0.9rem; }
