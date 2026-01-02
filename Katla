@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Katla Daily Indonesia</title>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:#121213;
+  color:#fff;
+  text-align:center;
+}
+
+h1{ margin-top:15px; }
+
+#board{
+  display:grid;
+  grid-template-rows:repeat(6,1fr);
+  gap:8px;
+  width:260px;
+  margin:20px auto;
+}
+
+.row{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+}
+
+.cell{
+  width:50px;
+  height:50px;
+  border:2px solid #3a3a3c;
+  font-size:24px;
+  font-weight:bold;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-transform:uppercase;
+}
+
+.correct{ background:#6aaa64; border-color:#6aaa64; }
+.present{ background:#c9b458; border-color:#c9b458; }
+.absent { background:#3a3a3c; border-color:#3a3a3c; }
+
+#keyboard{
+  width:330px;
+  margin:auto;
+}
+
+.key{
+  padding:10px;
+  margin:3px;
+  background:#818384;
+  border:none;
+  color:white;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.key.correct{ background:#6aaa64; }
+.key.present{ background:#c9b458; }
+.key.absent { background:#3a3a3c; }
+
+#stats{
+  margin-top:15px;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>KATLA DAILY 🇮🇩</h1>
+
+<div id="board"></div>
+<div id="keyboard"></div>
+<div id="stats"></div>
+
+<script>
+/* =============================
+   KATA INDONESIA 5 HURUF (KBBI)
+   ============================= */
+const WORDS = [
+  "BATIK","LAMPU","PINTU","KURSI","ANGIN",
+  "HUJAN","PANAS","MAKAN","MINUM","TIDUR",
+  "JALAN","DUNIA","BUKIT","MERAH","PUTIH",
+  "HITAM","HIJAU","SUSUN","SAKIT","SEHAT",
+  "PAGAR","BESAR","KECIL","DALAM","PANAH",
+  "RUMAH","KAPAL"
+];
+
+/* =============================
+   DAILY WORD (SAMA UNTUK SEMUA)
+   ============================= */
+function getDailyWord(){
+  const start = new Date(2024,0,1);
+  const today = new Date();
+  const day = Math.floor((today - start) / 86400000);
+  return WORDS[day % WORDS.length];
+}
+const answer = getDailyWord();
+
+/* =============================
+   GAME STATE
+   ============================= */
+let row = 0;
+let col = 0;
+let gameOver = false;
+
+/* =============================
+   STATISTIK (LOCALSTORAGE)
+   ============================= */
+let stats = JSON.parse(localStorage.getItem("katlaStats")) || {
+  played:0,
+  win:0,
+  streak:0,
+  maxStreak:0
+};
+
+/* =============================
+   BUILD BOARD
+   ============================= */
+const board = document.getElementById("board");
+
+for(let r=0;r<6;r++){
+  const rowDiv = document.createElement("div");
+  rowDiv.className = "row";
+  for(let c=0;c<5;c++){
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    rowDiv.appendChild(cell);
+  }
+  board.appendChild(rowDiv);
+}
+
+/* =============================
+   BUILD KEYBOARD
+   ============================= */
+const keyboard = document.getElementById("keyboard");
+const KEYS = "QWERTYUIOPASDFGHJKLZXCVBNM";
+
+KEYS.split("").forEach(k => createKey(k));
+createKey("ENTER");
+createKey("DEL");
+
+function createKey(label){
+  const btn = document.createElement("button");
+  btn.textContent = label;
+  btn.className = "key";
+  btn.onclick = () => handleKey(label);
+  keyboard.appendChild(btn);
+}
+
+/* =============================
+   INPUT HANDLER
+   ============================= */
+function handleKey(key){
+  if(gameOver) return;
+  const cells = board.children[row].children;
+
+  if(key === "DEL" && col > 0){
+    col--;
+    cells[col].textContent = "";
+  }
+
+  if(key === "ENTER" && col === 5){
+    submitGuess();
+  }
+
+  if(key.length === 1 && col < 5){
+    cells[col].textContent = key;
+    col++;
+  }
+}
+
+/* =============================
+   WORDLE LOGIC (ANTI BUG)
+   ============================= */
+function submitGuess(){
+  const cells = board.children[row].children;
+  let guess = "";
+
+  for(let i=0;i<5;i++){
+    guess += cells[i].textContent;
+  }
+
+  if(!WORDS.includes(guess)){
+    alert("Kata tidak valid!");
+    return;
+  }
+
+  let result = Array(5).fill("absent");
+  let answerArr = answer.split("");
+
+  // PASS 1 – HIJAU
+  for(let i=0;i<5;i++){
+    if(guess[i] === answerArr[i]){
+      result[i] = "correct";
+      answerArr[i] = null;
+    }
+  }
+
+  // PASS 2 – KUNING
+  for(let i=0;i<5;i++){
+    if(result[i] === "absent"){
+      const idx = answerArr.indexOf(guess[i]);
+      if(idx !== -1){
+        result[i] = "present";
+        answerArr[idx] = null;
+      }
+    }
+  }
+
+  // APPLY WARNA
+  for(let i=0;i<5;i++){
+    cells[i].classList.add(result[i]);
+    colorKey(guess[i], result[i]);
+  }
+
+  if(guess === answer){
+    endGame(true);
+  } else if(row === 5){
+    endGame(false);
+  }
+
+  row++;
+  col = 0;
+}
+
+function colorKey(letter, status){
+  document.querySelectorAll(".key").forEach(k=>{
+    if(k.textContent === letter){
+      if(
+        status === "correct" ||
+        (status === "present" && !k.classList.contains("correct")) ||
+        (!k.classList.contains("correct") && !k.classList.contains("present"))
+      ){
+        k.className = "key " + status;
+      }
+    }
+  });
+}
+
+/* =============================
+   END GAME + STATISTIK
+   ============================= */
+function endGame(win){
+  gameOver = true;
+  stats.played++;
+
+  if(win){
+    stats.win++;
+    stats.streak++;
+    stats.maxStreak = Math.max(stats.streak, stats.maxStreak);
+    alert("🎉 Selamat, Anda menang!");
+  } else {
+    stats.streak = 0;
+    alert("❌ Kalah! Jawaban hari ini: " + answer);
+  }
+
+  localStorage.setItem("katlaStats", JSON.stringify(stats));
+  showStats();
+}
+
+function showStats(){
+  document.getElementById("stats").innerHTML =
+    `Main: ${stats.played} |
+     Menang: ${stats.win} |
+     Streak: ${stats.streak} |
+     Max Streak: ${stats.maxStreak}`;
+}
+
+showStats();
+</script>
+
+</body>
+</html>
