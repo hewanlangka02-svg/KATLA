@@ -2,277 +2,205 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Katla Daily Indonesia</title>
-
+<title>KATLA Indonesia</title>
 <style>
-body{
-  font-family: Arial, sans-serif;
-  background:#121213;
-  color:#fff;
-  text-align:center;
-}
+  body{
+    font-family: Arial, sans-serif;
+    background:#121213;
+    color:#fff;
+    text-align:center;
+  }
+  h1{margin:10px 0}
+  #board{
+    display:grid;
+    grid-template-rows:repeat(6,1fr);
+    gap:8px;
+    width:260px;
+    margin:20px auto;
+  }
+  .row{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:8px;
+  }
+  .cell{
+    border:2px solid #3a3a3c;
+    height:45px;
+    font-size:22px;
+    font-weight:bold;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-transform:uppercase;
+  }
+  .correct{background:#538d4e;border-color:#538d4e;}
+  .present{background:#b59f3b;border-color:#b59f3b;}
+  .absent{background:#3a3a3c;border-color:#3a3a3c;}
 
-h1{ margin-top:15px; }
-
-#board{
-  display:grid;
-  grid-template-rows:repeat(6,1fr);
-  gap:8px;
-  width:260px;
-  margin:20px auto;
-}
-
-.row{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:8px;
-}
-
-.cell{
-  width:50px;
-  height:50px;
-  border:2px solid #3a3a3c;
-  font-size:24px;
-  font-weight:bold;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-transform:uppercase;
-}
-
-.correct{ background:#6aaa64; border-color:#6aaa64; }
-.present{ background:#c9b458; border-color:#c9b458; }
-.absent { background:#3a3a3c; border-color:#3a3a3c; }
-
-#keyboard{
-  width:330px;
-  margin:auto;
-}
-
-.key{
-  padding:10px;
-  margin:3px;
-  background:#818384;
-  border:none;
-  color:white;
-  font-weight:bold;
-  cursor:pointer;
-}
-
-.key.correct{ background:#6aaa64; }
-.key.present{ background:#c9b458; }
-.key.absent { background:#3a3a3c; }
-
-#stats{
-  margin-top:15px;
-  font-size:14px;
-}
+  #keyboard{
+    max-width:500px;
+    margin:20px auto;
+  }
+  .keyrow{display:flex;justify-content:center;margin-bottom:6px;}
+  button{
+    margin:2px;
+    height:45px;
+    min-width:32px;
+    background:#818384;
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  button.correct{background:#538d4e;}
+  button.present{background:#b59f3b;}
+  button.absent{background:#3a3a3c;}
 </style>
 </head>
-
 <body>
 
-<h1>KATLA DAILY 🇮🇩</h1>
+<h1>KATLA 🇮🇩</h1>
 
 <div id="board"></div>
-<div id="keyboard"></div>
-<div id="stats"></div>
+
+<div id="keyboard">
+  <div class="keyrow">Q W E R T Y U I O P</div>
+  <div class="keyrow">A S D F G H J K L</div>
+  <div class="keyrow">
+    <button id="enter">ENTER</button>
+    Z X C V B N M
+    <button id="back">⌫</button>
+  </div>
+</div>
 
 <script>
-/* =============================
-   KATA INDONESIA 5 HURUF (KBBI)
-   ============================= */
 const WORDS = [
-  "BATIK","LAMPU","PINTU","KURSI","ANGIN",
-  "HUJAN","PANAS","MAKAN","MINUM","TIDUR",
-  "JALAN","DUNIA","BUKIT","MERAH","PUTIH",
-  "HITAM","HIJAU","SUSUN","SAKIT","SEHAT",
-  "PAGAR","BESAR","KECIL","DALAM","PANAH",
-  "RUMAH","KAPAL"
+  "LUAR","BATU","APIK","EMAS","KOTA",
+  "LAUT","HIJA","MERAH","HITAM","PUTIH",
+  "PANAS","DINGI","ANGIN","AWAN","HUJAN",
+  "PAGI","SIANG","MALAM","SUNGA","BUKIT",
+  "HUTAN","TANAH","AIRKU","BAHAG","SENYU"
 ];
 
-/* =============================
-   DAILY WORD (SAMA UNTUK SEMUA)
-   ============================= */
-function getDailyWord(){
-  const start = new Date(2024,0,1);
-  const today = new Date();
-  const day = Math.floor((today - start) / 86400000);
-  return WORDS[day % WORDS.length];
-}
-const answer = getDailyWord();
-
-/* =============================
-   GAME STATE
-   ============================= */
+const ANSWER = WORDS[Math.floor(Math.random()*WORDS.length)];
 let row = 0;
 let col = 0;
-let gameOver = false;
+let current = "";
+let finished = false;
 
-/* =============================
-   STATISTIK (LOCALSTORAGE)
-   ============================= */
-let stats = JSON.parse(localStorage.getItem("katlaStats")) || {
-  played:0,
-  win:0,
-  streak:0,
-  maxStreak:0
-};
-
-/* =============================
-   BUILD BOARD
-   ============================= */
 const board = document.getElementById("board");
 
-for(let r=0;r<6;r++){
-  const rowDiv = document.createElement("div");
-  rowDiv.className = "row";
-  for(let c=0;c<5;c++){
-    const cell = document.createElement("div");
-    cell.className = "cell";
-    rowDiv.appendChild(cell);
+// build board
+for(let i=0;i<6;i++){
+  const r=document.createElement("div");
+  r.className="row";
+  for(let j=0;j<5;j++){
+    const c=document.createElement("div");
+    c.className="cell";
+    r.appendChild(c);
   }
-  board.appendChild(rowDiv);
+  board.appendChild(r);
 }
 
-/* =============================
-   BUILD KEYBOARD
-   ============================= */
-const keyboard = document.getElementById("keyboard");
-const KEYS = "QWERTYUIOPASDFGHJKLZXCVBNM";
-
-KEYS.split("").forEach(k => createKey(k));
-createKey("ENTER");
-createKey("DEL");
-
-function createKey(label){
-  const btn = document.createElement("button");
-  btn.textContent = label;
-  btn.className = "key";
-  btn.onclick = () => handleKey(label);
-  keyboard.appendChild(btn);
-}
-
-/* =============================
-   INPUT HANDLER
-   ============================= */
-function handleKey(key){
-  if(gameOver) return;
-  const cells = board.children[row].children;
-
-  if(key === "DEL" && col > 0){
-    col--;
-    cells[col].textContent = "";
-  }
-
-  if(key === "ENTER" && col === 5){
-    submitGuess();
-  }
-
-  if(key.length === 1 && col < 5){
-    cells[col].textContent = key;
+function addLetter(l){
+  if(col<5 && !finished){
+    current+=l;
+    board.children[row].children[col].textContent=l;
     col++;
   }
 }
 
-/* =============================
-   WORDLE LOGIC (ANTI BUG)
-   ============================= */
-function submitGuess(){
-  const cells = board.children[row].children;
-  let guess = "";
+function backspace(){
+  if(col>0 && !finished){
+    col--;
+    current=current.slice(0,-1);
+    board.children[row].children[col].textContent="";
+  }
+}
 
+function evaluate(){
+  if(current.length!==5) return;
+
+  const answerArr = ANSWER.split("");
+  const guessArr = current.split("");
+  const status = Array(5).fill("absent");
+
+  // hijau dulu
   for(let i=0;i<5;i++){
-    guess += cells[i].textContent;
+    if(guessArr[i]===answerArr[i]){
+      status[i]="correct";
+      answerArr[i]=null;
+    }
   }
 
-  if(!WORDS.includes(guess)){
-    alert("Kata tidak valid!");
+  // orange
+  for(let i=0;i<5;i++){
+    if(status[i]==="correct") continue;
+    const idx = answerArr.indexOf(guessArr[i]);
+    if(idx>-1){
+      status[i]="present";
+      answerArr[idx]=null;
+    }
+  }
+
+  // apply warna
+  for(let i=0;i<5;i++){
+    const cell = board.children[row].children[i];
+    cell.classList.add(status[i]);
+    colorKey(guessArr[i], status[i]);
+  }
+
+  if(current===ANSWER){
+    finished=true;
+    setTimeout(()=>alert("🎉 Benar!"),100);
     return;
   }
 
-  let result = Array(5).fill("absent");
-  let answerArr = answer.split("");
-
-  // PASS 1 – HIJAU
-  for(let i=0;i<5;i++){
-    if(guess[i] === answerArr[i]){
-      result[i] = "correct";
-      answerArr[i] = null;
-    }
-  }
-
-  // PASS 2 – KUNING
-  for(let i=0;i<5;i++){
-    if(result[i] === "absent"){
-      const idx = answerArr.indexOf(guess[i]);
-      if(idx !== -1){
-        result[i] = "present";
-        answerArr[idx] = null;
-      }
-    }
-  }
-
-  // APPLY WARNA
-  for(let i=0;i<5;i++){
-    cells[i].classList.add(result[i]);
-    colorKey(guess[i], result[i]);
-  }
-
-  if(guess === answer){
-    endGame(true);
-  } else if(row === 5){
-    endGame(false);
-  }
-
   row++;
-  col = 0;
+  col=0;
+  current="";
+
+  if(row===6){
+    finished=true;
+    setTimeout(()=>alert("❌ Jawaban: "+ANSWER),100);
+  }
 }
 
-function colorKey(letter, status){
-  document.querySelectorAll(".key").forEach(k=>{
-    if(k.textContent === letter){
-      if(
-        status === "correct" ||
-        (status === "present" && !k.classList.contains("correct")) ||
-        (!k.classList.contains("correct") && !k.classList.contains("present"))
-      ){
-        k.className = "key " + status;
-      }
+function colorKey(letter, state){
+  document.querySelectorAll("button").forEach(b=>{
+    if(b.textContent===letter){
+      if(b.classList.contains("correct")) return;
+      if(b.classList.contains("present") && state==="absent") return;
+      b.classList.remove("absent","present","correct");
+      b.classList.add(state);
     }
   });
 }
 
-/* =============================
-   END GAME + STATISTIK
-   ============================= */
-function endGame(win){
-  gameOver = true;
-  stats.played++;
+// keyboard click
+document.querySelectorAll(".keyrow").forEach(r=>{
+  r.innerHTML=r.textContent.split(" ").map(k=>{
+    if(k.length===1) return `<button>${k}</button>`;
+    return k;
+  }).join("");
+});
 
-  if(win){
-    stats.win++;
-    stats.streak++;
-    stats.maxStreak = Math.max(stats.streak, stats.maxStreak);
-    alert("🎉 Selamat, Anda menang!");
-  } else {
-    stats.streak = 0;
-    alert("❌ Kalah! Jawaban hari ini: " + answer);
-  }
+document.addEventListener("click",e=>{
+  if(!e.target.matches("button")) return;
+  const t=e.target.textContent;
+  if(t==="ENTER") evaluate();
+  else if(t==="⌫") backspace();
+  else addLetter(t);
+});
 
-  localStorage.setItem("katlaStats", JSON.stringify(stats));
-  showStats();
-}
-
-function showStats(){
-  document.getElementById("stats").innerHTML =
-    `Main: ${stats.played} |
-     Menang: ${stats.win} |
-     Streak: ${stats.streak} |
-     Max Streak: ${stats.maxStreak}`;
-}
-
-showStats();
+// physical keyboard
+document.addEventListener("keydown",e=>{
+  if(finished) return;
+  if(e.key==="Enter") evaluate();
+  else if(e.key==="Backspace") backspace();
+  else if(/^[a-zA-Z]$/.test(e.key)) addLetter(e.key.toUpperCase());
+});
 </script>
 
 </body>
